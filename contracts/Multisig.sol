@@ -80,4 +80,26 @@ contract Multisig {
 
         txCount += 1;
     }
+
+    function approveTx(uint8 _txId) external {
+        Transaction storage trx = transactions[_txId];
+
+        require(trx.id != 0, "invalid tx id");
+        
+        require(IERC20(trx.tokenAddress).balanceOf(address(this)) >= trx.amount, "insufficient funds");
+        require(!trx.isCompleted, "transaction already completed");
+        require(trx.noOfApproval < quorum, "approvals already reached");
+
+        require(isValidSigner[msg.sender], "not a valid signer");
+        require(!hasSigned[msg.sender][_txId], "can't sign twice");
+
+        hasSigned[msg.sender][_txId] = true;
+        trx.noOfApproval += 1;
+        trx.transactionSigners.push(msg.sender);
+
+        if(trx.noOfApproval == quorum) {
+            trx.isCompleted = true;
+            IERC20(trx.tokenAddress).transfer(trx.recipient, trx.amount);
+        }
+    }
 }
