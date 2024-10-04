@@ -110,4 +110,24 @@ contract Multisig {
 
         quorum = _quorum;
     }
+    
+    function approveQuorum(uint8 _qrId) external {
+        Quorum storage qrm = quorums[_qrId];
+
+        require(qrm.id != 0, "invalid quorum id");
+        require(!qrm.isApproved, "Quorum already approved");
+        require(isValidSigner[msg.sender], "not a valid signer");
+        require(qrm.noOfApprovals < quorum, "approvals already reached");
+        require(!hasSigned[msg.sender][_qrId], "can't sign twice");
+
+        hasSigned[msg.sender][_qrId] = true;
+        qrm.noOfApprovals += 1;
+
+        qrm.quorumSigners.push(msg.sender);
+
+        if(qrm.noOfApprovals == quorum) {
+            qrm.isApproved = true;
+            quorum = qrm.id;
+        }
+    }
 }
